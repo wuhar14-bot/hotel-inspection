@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>经理看板 — 客房质检</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    #modal { transition: opacity 0.2s; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">📋</span>
+      <div>
+        <div class="font-bold text-gray-800">经理看板</div>
+        <div class="text-xs text-gray-400" id="lastUpdated">加载中…</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="loadResults()"
+        class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-xl transition">
+        刷新
+      </button>
+      <a href="/"
+        class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-xl transition">
+        阿姨端
+      </a>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 py-5 space-y-4">
+
+    <!-- Stats -->
+    <div id="stats" class="grid grid-cols-3 gap-3"></div>
+
+    <!-- Filter tabs -->
+    <div class="flex gap-2">
+      <button id="tabAll" onclick="setFilter('all')"
+        class="flex-1 py-2 rounded-xl text-sm font-semibold bg-gray-800 text-white transition">
+        全部
+      </button>
+      <button id="tabFailed" onclick="setFilter('failed')"
+        class="flex-1 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600 transition">
+        ❌ 不合格
+      </button>
+      <button id="tabPassed" onclick="setFilter('passed')"
+        class="flex-1 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600 transition">
+        ✅ 合格
+      </button>
+    </div>
+
+    <!-- Room list -->
+    <div id="roomList" class="space-y-3"></div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden text-center py-16 text-gray-400">
+      <div class="text-4xl mb-3">📭</div>
+      <div class="text-sm">暂无质检记录</div>
+      <div class="text-xs mt-1">阿姨提交后将显示在这里</div>
+    </div>
+
+    <div class="h-6"></div>
+  </div>
+
+  <!-- Detail Modal (bottom sheet) -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+    <div class="bg-white w-full max-w-2xl rounded-t-3xl max-h-[88vh] flex flex-col">
+      <div class="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+        <div id="modalTitle" class="font-bold text-gray-800 text-lg"></div>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none w-8 h-8 flex items-center justify-center">&times;</button>
+      </div>
+      <div id="modalContent" class="overflow-y-auto p-5 space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    let allRooms = [];
+    let currentFilter = 'all';
+
+    async function loadResults() {
+      try {
+        const res = await fetch('/api/results');
+        const data = await res.json();
+        allRooms = data.rooms;
+        renderStats(data.stats);
+        renderRooms();
+        const now = new Date();
+        document.getElementById('lastUpdated').textContent =
+          `上次更新 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      } catch (e) {
+        document.getElementById('lastUpdated').textContent = '加载失败，请刷新';
+        console.error(e);
+      }
+    }
+
+    function renderStats(stats) {
+      const el = document.getElementById('stats');
+      el.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-sm p-4 text-center">
+          <div class="text-2xl font-bold text-gray-800">${stats.total}</div>
+          <div class="text-xs text-gray-400 mt-1">已检房间</div>
+        </div>
+        <div class="bg-green-50 rounded-2xl shadow-sm p-4 text-center">
+          <div class="text-2xl font-bold text-green-600">${stats.passed}</div>
+          <div class="text-xs text-green-500 mt-1">合格</div>
+        </div>
+        <div class="bg-red-50 rounded-2xl shadow-sm p-4 text-center">
+          <div class="text-2xl font-bold text-red-500">${stats.failed}</div>
+          <div class="text-xs text-red-400 mt-1">待整改</div>
+        </div>`;
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      ['all', 'failed', 'passed'].forEach(name => {
+        const id = 'tab' + name.charAt(0).toUpperCase() + name.slice(1);
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.className = 'flex-1 py-2 rounded-xl text-sm font-semibold transition ' +
+          (f === name ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600');
+      });
+      renderRooms();
+    }
+
+    function renderRooms() {
+      const list = document.getElementById('roomList');
+      const empty = document.getElementById('emptyState');
+
+      let rooms = allRooms;
+      if (currentFilter === 'failed') rooms = allRooms.filter(r => !r.overall_pass);
+      if (currentFilter === 'passed') rooms = allRooms.filter(r => r.overall_pass);
+
+      if (rooms.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      list.innerHTML = '';
+      rooms.forEach((room, idx) => {
+        const pass = room.overall_pass;
+        const border = pass ? 'border-green-200' : 'border-red-300';
+        const badge = pass
+          ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✓ 合格</span>'
+          : '<span class="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">✗ 不合格</span>';
+
+        const allIssues = (room.images || []).flatMap(img => img.issues || []).filter(Boolean);
+        const issuePreview = allIssues.slice(0, 2).map(i =>
+          `<li class="text-xs text-red-500">⚠ ${escapeHtml(i)}</li>`).join('');
+        const moreText = allIssues.length > 2
+          ? `<li class="text-xs text-gray-400">…还有 ${allIssues.length - 2} 个问题</li>` : '';
+
+        // Store room index as data attribute instead of embedding JSON inline
+        const div = document.createElement('div');
+        div.className = `bg-white rounded-2xl shadow-sm border-2 ${border} p-4 fade-in cursor-pointer active:scale-[0.98] transition`;
+        div.dataset.roomIdx = idx;  // safe: just a number
+        div.addEventListener('click', () => openModal(rooms[idx]));
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="text-xl font-bold text-gray-800">🚪 ${escapeHtml(room.room_number)}</div>
+              ${badge}
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-gray-700">${room.overall_score}分</div>
+              <div class="text-xs text-gray-400">${room.submitted_at || ''}</div>
+            </div>
+          </div>
+          ${allIssues.length > 0 ? `
+          <div class="mt-2 pt-2 border-t border-gray-100">
+            <ul class="space-y-0.5">${issuePreview}${moreText}</ul>
+          </div>` : ''}`;
+        list.appendChild(div);
+      });
+    }
+
+    function openModal(room) {
+      document.getElementById('modalTitle').textContent = `房间 ${room.room_number} — 详情`;
+      const content = document.getElementById('modalContent');
+      content.innerHTML = '';
+
+      // Overall line
+      const overallDiv = document.createElement('div');
+      overallDiv.className = `rounded-xl px-4 py-3 text-sm font-semibold mb-1 ${
+        room.overall_pass ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`;
+      overallDiv.textContent = `综合评分 ${room.overall_score} 分 · ${room.summary}`;
+      content.appendChild(overallDiv);
+
+      (room.images || []).forEach((img, i) => {
+        const pass = img.pass;
+        const borderColor = pass ? 'border-green-200' : 'border-red-200';
+        const badgeBg = pass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        const badgeText = pass ? '✓ 合格' : '✗ 不合格';
+        const sceneLabel = img.scene
+          ? `<span class="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full ml-1">${escapeHtml(img.scene)}</span>` : '';
+
+        const obsHtml = (img.observations || []).map(o =>
+          `<li class="text-gray-600 text-sm">${escapeHtml(o)}</li>`).join('');
+        const issueHtml = (img.issues || []).length > 0
+          ? img.issues.map(iss => `<li class="text-red-600 text-sm">⚠ ${escapeHtml(iss)}</li>`).join('')
+          : '<li class="text-green-600 text-sm">无问题</li>';
+
+        const card = document.createElement('div');
+        card.className = `border-2 ${borderColor} rounded-2xl p-4`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center flex-wrap gap-1">
+              <span class="font-semibold text-gray-700 text-sm">📸 照片 ${i+1}</span>
+              ${sceneLabel}
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-lg font-bold text-gray-700">${img.score}分</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold ${badgeBg}">${badgeText}</span>
+            </div>
+          </div>
+          ${obsHtml ? `<div class="mb-2"><div class="text-xs font-semibold text-gray-400 mb-1">AI 观察</div><ul class="space-y-0.5 pl-1">${obsHtml}</ul></div>` : ''}
+          <div><div class="text-xs font-semibold text-gray-400 mb-1">问题</div><ul class="space-y-0.5 pl-1">${issueHtml}</ul></div>`;
+        content.appendChild(card);
+      });
+
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    loadResults();
+    setInterval(loadResults, 15000);
+  </script>
+</body>
+</html>

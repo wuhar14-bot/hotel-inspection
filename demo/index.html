@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>客房质检 — 阿姨端</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🏨</span>
+      <div>
+        <div class="font-bold text-gray-800">客房 AI 质检</div>
+        <div class="text-xs text-gray-400">上传照片，AI 自动评分</div>
+      </div>
+    </div>
+    <a href="/manager"
+      class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-xl transition">
+      📋 经理看板
+    </a>
+  </div>
+
+  <div class="max-w-lg mx-auto px-4 py-5 space-y-4">
+
+    <!-- Room Number -->
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <label class="block text-sm font-semibold text-gray-600 mb-2">房间号</label>
+      <input id="roomNumber" type="text" placeholder="例如：301" inputmode="numeric"
+        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+    </div>
+
+    <!-- Upload -->
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <label class="block text-sm font-semibold text-gray-600 mb-2">上传照片</label>
+      <label for="fileInput"
+        class="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-xl py-7 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition">
+        <span class="text-4xl mb-1">📷</span>
+        <span class="text-sm text-blue-500 font-medium">点击拍照 / 选择相册</span>
+        <span class="text-xs text-gray-400 mt-1">支持多张同时上传</span>
+      </label>
+      <!-- 不加 capture，iOS/Android 会自动弹出"拍照 or 从相册选" -->
+      <input id="fileInput" type="file" accept="image/*" multiple class="hidden" />
+      <div id="thumbs" class="flex flex-wrap gap-2 mt-3"></div>
+      <div id="fileCount" class="text-xs text-gray-400 mt-1 hidden"></div>
+    </div>
+
+    <!-- Submit -->
+    <button id="submitBtn" onclick="submitInspection()"
+      class="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-4 rounded-2xl text-lg transition shadow-md disabled:opacity-50">
+      开始质检
+    </button>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden text-center py-8">
+      <div class="inline-block w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+      <div class="text-gray-600 text-sm font-medium">AI 正在分析，请稍候…</div>
+      <div id="loadingHint" class="text-gray-400 text-xs mt-1"></div>
+    </div>
+
+    <!-- Overall Result -->
+    <div id="overallResult" class="hidden fade-in"></div>
+
+    <!-- Per-image Results -->
+    <div id="imageResults" class="space-y-4"></div>
+
+    <!-- Bottom spacer -->
+    <div class="h-6"></div>
+
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const thumbs = document.getElementById('thumbs');
+    const fileCount = document.getElementById('fileCount');
+    let selectedFiles = [];
+
+    fileInput.addEventListener('change', (e) => {
+      selectedFiles = Array.from(e.target.files);
+      thumbs.innerHTML = '';
+      selectedFiles.forEach((file, idx) => {
+        const url = URL.createObjectURL(file);
+        const wrap = document.createElement('div');
+        wrap.className = 'relative';
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'thumb border-2 border-gray-100';
+        wrap.appendChild(img);
+        thumbs.appendChild(wrap);
+      });
+      if (selectedFiles.length > 0) {
+        fileCount.textContent = `已选 ${selectedFiles.length} 张照片`;
+        fileCount.classList.remove('hidden');
+      }
+    });
+
+    async function submitInspection() {
+      const roomNumber = document.getElementById('roomNumber').value.trim();
+      if (!roomNumber) { alert('请输入房间号'); return; }
+      if (selectedFiles.length === 0) { alert('请选择至少一张照片'); return; }
+
+      const btn = document.getElementById('submitBtn');
+      const loading = document.getElementById('loading');
+      const hint = document.getElementById('loadingHint');
+
+      loading.classList.remove('hidden');
+      document.getElementById('overallResult').classList.add('hidden');
+      document.getElementById('imageResults').innerHTML = '';
+      btn.disabled = true;
+
+      // Show estimated time hint — parallel: all images processed simultaneously, time ≈ slowest single call
+      const n = selectedFiles.length;
+      hint.textContent = `${n} 张照片同时并行处理，预计 15–25 秒`;
+
+      const formData = new FormData();
+      formData.append('room_number', roomNumber);
+      selectedFiles.forEach(f => formData.append('files', f));
+
+      // 90-second timeout to outlast WeChat browser's default ~30s cut-off
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+      try {
+        const res = await fetch('/inspect', { method: 'POST', body: formData, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error(`服务器错误 ${res.status}`);
+        const data = await res.json();
+        renderResults(data);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          alert('AI 处理超时（>90秒），请减少照片数量或稍后重试');
+        } else {
+          alert('请求失败：' + err.message);
+        }
+      } finally {
+        loading.classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    function renderResults(data) {
+      // Overall banner
+      const overall = document.getElementById('overallResult');
+      const passColor = data.overall_pass ? 'bg-green-500' : 'bg-red-500';
+      const passIcon = data.overall_pass ? '✅' : '❌';
+      const passText = data.overall_pass ? '通过' : '不通过';
+      overall.innerHTML = `
+        <div class="${passColor} text-white rounded-2xl p-5 text-center fade-in shadow-md">
+          <div class="text-4xl mb-1">${passIcon}</div>
+          <div class="text-2xl font-bold">${passText}</div>
+          <div class="text-lg mt-1">房间 ${data.room_number} &nbsp;·&nbsp; 综合评分 <span class="font-bold">${data.overall_score}</span> 分</div>
+          <div class="text-sm mt-1 opacity-80">${data.summary}</div>
+        </div>`;
+      overall.classList.remove('hidden');
+
+      // Per-image cards
+      const container = document.getElementById('imageResults');
+      data.images.forEach((img, i) => {
+        const pass = img.pass;
+        const borderColor = pass ? 'border-green-200' : 'border-red-300';
+        const badgeBg = pass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        const badgeText = pass ? '✓ 合格' : '✗ 不合格';
+        const sceneLabel = img.scene ? `<span class="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">${img.scene}</span>` : '';
+
+        const obsHtml = (img.observations || []).map(o =>
+          `<li class="text-gray-600 text-sm">${o}</li>`).join('');
+        const issueHtml = (img.issues || []).length > 0
+          ? (img.issues.map(iss => `<li class="text-red-600 text-sm">⚠ ${iss}</li>`).join(''))
+          : '<li class="text-green-600 text-sm">无问题</li>';
+
+        const div = document.createElement('div');
+        div.className = `bg-white rounded-2xl shadow-sm border-2 ${borderColor} p-4 fade-in`;
+        div.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex flex-col gap-1">
+              <div class="font-semibold text-gray-700 text-sm">📸 照片 ${i+1}</div>
+              ${sceneLabel}
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-lg font-bold text-gray-700">${img.score}分</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold ${badgeBg}">${badgeText}</span>
+            </div>
+          </div>
+          ${obsHtml ? `<div class="mb-2"><div class="text-xs font-semibold text-gray-400 mb-1">AI 观察</div><ul class="space-y-0.5 pl-1">${obsHtml}</ul></div>` : ''}
+          <div><div class="text-xs font-semibold text-gray-400 mb-1">问题</div><ul class="space-y-0.5 pl-1">${issueHtml}</ul></div>`;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

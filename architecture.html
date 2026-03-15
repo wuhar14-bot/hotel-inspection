@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>酒店 AI 质检系统 — 架构图</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; min-height: 100vh; padding: 32px 16px; }
+
+    h1 { text-align: center; font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 36px; }
+
+    .diagram { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+    /* ── Layer ── */
+    .layer { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; width: 100%; }
+
+    /* ── Boxes ── */
+    .box {
+      border-radius: 14px;
+      padding: 16px 20px;
+      text-align: center;
+      min-width: 160px;
+    }
+    .box .box-icon { font-size: 28px; margin-bottom: 6px; }
+    .box .box-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .box .box-sub  { font-size: 12px; color: #666; margin-top: 4px; line-height: 1.6; }
+    .box .box-tag  {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 20px; margin-top: 8px;
+    }
+
+    .box-client { background: #e8f4fd; border: 2px solid #90caf9; }
+    .box-server { background: #e8f5e9; border: 2px solid #a5d6a7; }
+    .box-db     { background: #fff3e0; border: 2px solid #ffcc80; }
+    .box-ai     { background: #f3e5f5; border: 2px solid #ce93d8; }
+
+    .tag-client { background: #1565c0; color: #fff; }
+    .tag-server { background: #2e7d32; color: #fff; }
+    .tag-db     { background: #e65100; color: #fff; }
+    .tag-ai     { background: #6a1b9a; color: #fff; }
+
+    /* ── Railway wrapper ── */
+    .railway-wrap {
+      border: 2.5px dashed #66bb6a;
+      border-radius: 18px;
+      padding: 20px 24px 24px;
+      background: #f1f8f1;
+      position: relative;
+      width: 100%;
+    }
+    .railway-label {
+      position: absolute; top: -13px; left: 20px;
+      background: #2e7d32; color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 12px; border-radius: 20px;
+    }
+    .railway-inner { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; align-items: center; }
+
+    /* ── Vertical arrow bridge (between layers) ── */
+    .v-bridge {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      align-items: flex-start;
+      margin: 6px 0;
+      width: 100%;
+    }
+    .v-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .v-arrow .pill {
+      font-size: 11px; color: #444; background: #fff;
+      border: 1px solid #ccc; border-radius: 20px;
+      padding: 3px 10px; white-space: nowrap;
+    }
+    .v-arrow .shaft {
+      width: 2px; height: 34px; background: #aaa;
+    }
+    .v-arrow .tip-down {
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid #aaa;
+    }
+    .v-arrow .tip-up {
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 10px solid #aaa;
+    }
+    /* request = blue tint, response = green tint */
+    .v-arrow.req .shaft  { background: #5c9bd6; }
+    .v-arrow.req .tip-down { border-top-color: #5c9bd6; }
+    .v-arrow.req .pill   { border-color: #5c9bd6; color: #1a5fa8; }
+    .v-arrow.res .shaft  { background: #5aaa6e; }
+    .v-arrow.res .tip-up { border-bottom-color: #5aaa6e; }
+    .v-arrow.res .pill   { border-color: #5aaa6e; color: #1e7d38; }
+
+    /* ── Horizontal arrow bridge (FastAPI ↔ Postgres) ── */
+    .h-bridge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+    }
+    .h-arrow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #555;
+    }
+    .h-arrow .h-pill {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+    .h-shaft { height: 2px; width: 28px; background: #aaa; }
+    .h-tip-right {
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 8px solid #aaa;
+    }
+    .h-tip-left {
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 8px solid #aaa;
+    }
+    .h-arrow.write .h-shaft { background: #e65100; }
+    .h-arrow.write .h-tip-right { border-left-color: #e65100; }
+    .h-arrow.write .h-pill { border-color: #e65100; color: #bf360c; }
+    .h-arrow.read  .h-shaft { background: #1565c0; }
+    .h-arrow.read  .h-tip-left  { border-right-color: #1565c0; }
+    .h-arrow.read  .h-pill { border-color: #1565c0; color: #0d3b7e; }
+
+    /* step badge */
+    .step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      font-size: 11px; font-weight: 700; color: #fff;
+      background: #546e7a; flex-shrink: 0;
+    }
+
+    /* flow table */
+    .flow-table { max-width: 860px; margin: 44px auto 0; width: 100%; }
+    .flow-table h2 { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    th { background: #1a1a2e; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+    td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; color: #333; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .step-td { text-align: center; }
+
+    /* legend */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 28px auto 0; max-width: 860px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <h1>🏨 酒店 AI 质检系统 — 系统架构</h1>
+  <div class="subtitle">Hotel Room AI Inspection System · Architecture Diagram</div>
+
+  <div class="diagram">
+
+    <!-- Layer 1: Clients -->
+    <div class="layer">
+      <div class="box box-client">
+        <div class="box-icon">📱</div>
+        <div class="box-title">阿姨端（H5）</div>
+        <div class="box-sub">手机浏览器<br>输入房号 · 拍照 · 提交</div>
+        <span class="box-tag tag-client">用户端</span>
+      </div>
+      <div class="box box-client">
+        <div class="box-icon">💻</div>
+        <div class="box-title">经理看板（H5）</div>
+        <div class="box-sub">手机 / 电脑浏览器<br>汇总报告 · 筛选 · 详情</div>
+        <span class="box-tag tag-client">用户端</span>
+      </div>
+    </div>
+
+    <!-- Vertical arrows: Client ↔ Railway -->
+    <div class="v-bridge">
+      <div class="v-arrow req">
+        <div class="pill">① 发送质检请求（POST /inspect）</div>
+        <div class="shaft"></div>
+        <div class="tip-down"></div>
+      </div>
+      <div class="v-arrow res">
+        <div class="tip-up"></div>
+        <div class="shaft"></div>
+        <div class="pill">④ 返回结果 JSON（pass · score · issues）</div>
+      </div>
+    </div>
+
+    <!-- Layer 2: Railway -->
+    <div class="railway-wrap">
+      <div class="railway-label">☁️ Railway 云服务器（公网 HTTPS）</div>
+      <div class="railway-inner">
+
+        <div class="box box-server" style="min-width:220px">
+          <div class="box-icon">⚙️</div>
+          <div class="box-title">FastAPI 后端</div>
+          <div class="box-sub">
+            GET &nbsp;/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ 阿姨端 H5<br>
+            GET &nbsp;/manager → 经理看板 H5<br>
+            GET &nbsp;/api/results → 所有记录<br>
+            POST /inspect &nbsp;→ AI 质检入口
+          </div>
+          <span class="box-tag tag-server">main.py · Python</span>
+        </div>
+
+        <!-- Horizontal arrows: FastAPI ↔ Postgres -->
+        <div class="h-bridge">
+          <div class="h-arrow write">
+            <div class="h-pill">⑥ 写入记录（upsert）</div>
+            <div class="h-shaft"></div>
+            <div class="h-tip-right"></div>
+          </div>
+          <div class="h-arrow read">
+            <div class="h-tip-left"></div>
+            <div class="h-shaft"></div>
+            <div class="h-pill">读取所有记录</div>
+          </div>
+        </div>
+
+        <div class="box box-db" style="min-width:180px">
+          <div class="box-icon">🗄️</div>
+          <div class="box-title">Railway Postgres</div>
+          <div class="box-sub">
+            inspections 表<br>
+            room_number · record(JSON)<br>
+            submitted_at · upsert 写入
+          </div>
+          <span class="box-tag tag-db">持久化存储</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Vertical arrows: Railway ↔ AI -->
+    <div class="v-bridge">
+      <div class="v-arrow req">
+        <div class="pill">② 并发发送图片（base64 · HTTPS · ×10 线程）</div>
+        <div class="shaft"></div>
+        <div class="tip-down"></div>
+      </div>
+      <div class="v-arrow res">
+        <div class="tip-up"></div>
+        <div class="shaft"></div>
+        <div class="pill">③ 返回 JSON（pass · score · scene · issues）</div>
+      </div>
+    </div>
+
+    <!-- Layer 3: AI -->
+    <div class="layer">
+      <div class="box box-ai" style="min-width:260px">
+        <div class="box-icon">🤖</div>
+        <div class="box-title">阿里云 Dashscope · Qwen3-VL-Plus</div>
+        <div class="box-sub">
+          视觉大模型 · 场景自动识别<br>
+          8 个场景各自判断标准<br>
+          返回结构化 JSON（pass / score / issues）
+        </div>
+        <span class="box-tag tag-ai">AI 视觉推理</span>
+      </div>
+    </div>
+
+  </div><!-- /diagram -->
+
+  <!-- Step flow table -->
+  <div class="flow-table">
+    <h2>📋 请求完整流程（阿姨提交质检）</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>步骤</th><th>说明</th><th>耗时估算</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="step-td"><span class="step">①</span></td>
+          <td>阿姨提交表单</td>
+          <td>浏览器把房间号 + 所有照片打包成 multipart/form-data，POST 到 <code>/inspect</code></td>
+          <td>即时</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">②</span></td>
+          <td>FastAPI 读取图片</td>
+          <td>服务器读取每张图片的字节流，base64 编码，准备发给 AI</td>
+          <td>&lt; 1s</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">③</span></td>
+          <td>并发调用 Qwen AI</td>
+          <td>所有照片同时发出（ThreadPoolExecutor × 10），等最慢一张返回</td>
+          <td>15–25s（10 张）</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">④</span></td>
+          <td>AI 返回结果</td>
+          <td>每张图返回 <code>{pass, score, scene, observations, issues}</code> JSON</td>
+          <td>含在 ③ 内</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">⑤</span></td>
+          <td>FastAPI 汇总</td>
+          <td>计算 overall_pass（全部通过才合格）、overall_score（平均分）、summary</td>
+          <td>&lt; 0.1s</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">⑥</span></td>
+          <td>写入 Postgres</td>
+          <td>upsert 到 inspections 表（同一房间号覆盖上次记录），数据永久保存</td>
+          <td>&lt; 0.5s</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step">⑦</span></td>
+          <td>返回结果给阿姨</td>
+          <td>浏览器收到 JSON，渲染每张图的评分卡片 + 整体通过/不通过横幅</td>
+          <td>即时</td>
+        </tr>
+        <tr>
+          <td class="step-td"><span class="step" style="background:#b71c1c">↻</span></td>
+          <td>经理看板自动刷新</td>
+          <td>GET <code>/api/results</code> 每 15 秒自动轮询，从 Postgres 读最新所有房间记录</td>
+          <td>&lt; 0.5s</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#90caf9"></div> 用户端（浏览器）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a5d6a7"></div> Railway 服务器</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffcc80"></div> Postgres 数据库</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ce93d8"></div> AI 视觉模型</div>
+    <div class="legend-item"><div style="width:24px;height:3px;background:#5c9bd6;border-radius:2px;"></div> 请求方向</div>
+    <div class="legend-item"><div style="width:24px;height:3px;background:#5aaa6e;border-radius:2px;"></div> 返回方向</div>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:32px;">
+    Hotel Room AI Inspection System · 2026-03-15 · Qwen3-VL-Plus + FastAPI + Railway Postgres
+  </p>
+
+</body>
+</html>
