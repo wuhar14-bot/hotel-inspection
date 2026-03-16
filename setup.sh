@@ -4,9 +4,10 @@
 # 使用方法: bash setup.sh
 
 set -e
+export DEBIAN_FRONTEND=noninteractive
 
 echo "=== 1. 更新系统 ==="
-apt update && apt upgrade -y
+apt update && apt upgrade -y -o Dpkg::Options::="--force-confkeep"
 
 echo "=== 2. 安装 Docker ==="
 curl -fsSL https://get.docker.com | sh
