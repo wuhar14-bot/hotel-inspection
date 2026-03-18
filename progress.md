@@ -39,7 +39,16 @@
 - 阿姨端: https://laudable-art-production.up.railway.app
 - 经理看板: https://laudable-art-production.up.railway.app/manager
 
+### Session 3 (cont.) — 2026-03-15
+- Rewrote architecture.html arrows: blue↓ request / green↑ response, horizontal FastAPI↔Postgres
+- Diagnosed mobile "Load failed": WeChat ~30s timeout; data was actually saved in Postgres (200 OK)
+- Fixed index.html time estimate: `n*3` (serial) → flat "15–25s" (parallel); added 90s AbortController
+- Pushed hotel-inspection to GitHub: https://github.com/wuhar14-bot/hotel-inspection
+- Created inspection-standards.md: full spec for all 8 live scenes + 6 draft new scenes + shelved list
+- Exported inspection-standards.docx for sharing with colleagues
+
 ### Next Steps
 - Run full 20-image test with v8 prompt
+- Review inspection-standards.md with team, confirm new scenes to add
 - Design production DB schema
 - Build 微信小程序

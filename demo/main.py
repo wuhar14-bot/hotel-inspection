@@ -94,7 +94,7 @@ PROMPT = """你是酒店客房质检员。请先识别这张照片属于哪个�
 # ---------- Database ----------
 
 def get_conn():
-    return psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+    return psycopg2.connect(os.environ["DATABASE_URL"], sslmode="disable")
 
 
 def init_db():

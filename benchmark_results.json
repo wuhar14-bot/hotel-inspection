@@ -1,0 +1,250 @@
+{
+  "kimi": {
+    "1": {
+      "provider": "Kimi moonshot-v1-8k-vision",
+      "n_images": 1,
+      "total_elapsed": 2.36,
+      "avg_per_image": 2.36,
+      "accuracy": 100,
+      "correct": 1,
+      "total": 1,
+      "errors": [],
+      "results": [
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "衣柜/浴袍",
+          "observations": [
+            "衣柜内挂有两件浴袍",
+            "浴袍整齐叠放"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084536_867.jpg",
+          "_expected": true,
+          "_scene_label": "衣柜/浴袍-好",
+          "_elapsed": 2.36,
+          "_correct": true
+        }
+      ]
+    },
+    "3": {
+      "provider": "Kimi moonshot-v1-8k-vision",
+      "n_images": 3,
+      "total_elapsed": 10.41,
+      "avg_per_image": 3.47,
+      "accuracy": 67,
+      "correct": 2,
+      "total": 3,
+      "errors": [],
+      "results": [
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "衣柜/浴袍",
+          "observations": [
+            "衣柜内挂有两件浴袍",
+            "浴袍整齐叠放"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084536_867.jpg",
+          "_expected": true,
+          "_scene_label": "衣柜/浴袍-好",
+          "_elapsed": 4.91,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "衣柜/浴袍",
+          "observations": [
+            "衣柜内挂有一件浴袍",
+            "浴袍整齐挂在衣架上"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084114_450.jpg",
+          "_expected": false,
+          "_scene_label": "衣柜/浴袍-坏",
+          "_elapsed": 3.19,
+          "_correct": false
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "毛巾架",
+          "observations": [
+            "毛巾全部为白色",
+            "毛巾整齐叠放，共3条"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084613_067.jpg",
+          "_expected": true,
+          "_scene_label": "毛巾架-好",
+          "_elapsed": 2.31,
+          "_correct": true
+        }
+      ]
+    },
+    "10": {
+      "provider": "Kimi moonshot-v1-8k-vision",
+      "n_images": 10,
+      "total_elapsed": 19.72,
+      "avg_per_image": 1.97,
+      "accuracy": 50,
+      "correct": 5,
+      "total": 10,
+      "errors": [],
+      "results": [
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "衣柜/浴袍",
+          "observations": [
+            "衣柜内挂有两件浴袍",
+            "浴袍整齐叠放"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084536_867.jpg",
+          "_expected": true,
+          "_scene_label": "衣柜/浴袍-好",
+          "_elapsed": 1.63,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "衣柜/浴袍",
+          "observations": [
+            "衣柜内挂有一件浴袍",
+            "浴袍整齐挂在衣架上"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084114_450.jpg",
+          "_expected": false,
+          "_scene_label": "衣柜/浴袍-坏",
+          "_elapsed": 1.48,
+          "_correct": false
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "毛巾架",
+          "observations": [
+            "毛巾全部为白色",
+            "毛巾整齐叠放，共3条"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084613_067.jpg",
+          "_expected": true,
+          "_scene_label": "毛巾架-好",
+          "_elapsed": 1.29,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "毛巾架",
+          "observations": [
+            "毛巾全部为白色",
+            "毛巾整齐叠放，共3条"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084130_383.jpg",
+          "_expected": false,
+          "_scene_label": "毛巾架-坏",
+          "_elapsed": 2.3,
+          "_correct": false
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "马桶区",
+          "observations": [
+            "马桶盖关闭",
+            "垃圾桶为空"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084618_282.jpg",
+          "_expected": true,
+          "_scene_label": "马桶区-好",
+          "_elapsed": 1.92,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "马桶区",
+          "observations": [
+            "马桶盖处于打开状态",
+            "垃圾桶为空"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084134_155.jpg",
+          "_expected": false,
+          "_scene_label": "马桶区-坏",
+          "_elapsed": 2.33,
+          "_correct": false
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "洗手台/洗脸盆",
+          "observations": [
+            "台面整洁，洗浴用品整齐",
+            "无散乱纸巾"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084555_403.jpg",
+          "_expected": true,
+          "_scene_label": "洗手台-好",
+          "_elapsed": 1.77,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 95,
+          "scene": "洗手台/洗脸盆",
+          "observations": [
+            "台面整洁，洗浴用品整齐",
+            "无散乱纸巾"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084103_295.jpg",
+          "_expected": false,
+          "_scene_label": "洗手台-坏",
+          "_elapsed": 2.55,
+          "_correct": false
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "桌面/茶水区",
+          "observations": [
+            "桌面整洁，矿泉水瓶摆放整齐",
+            "有4瓶矿泉水"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084543_160.jpg",
+          "_expected": true,
+          "_scene_label": "桌面茶水-好",
+          "_elapsed": 1.85,
+          "_correct": true
+        },
+        {
+          "pass": true,
+          "score": 90,
+          "scene": "桌面/茶水区",
+          "observations": [
+            "桌面整洁，物品摆放整齐",
+            "有两瓶矿泉水"
+          ],
+          "issues": [],
+          "filename": "微信图片_2026-03-15_084139_302.jpg",
+          "_expected": false,
+          "_scene_label": "桌面茶水-坏",
+          "_elapsed": 2.6,
+          "_correct": false
+        }
+      ]
+    }
+  }
+}
